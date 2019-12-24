@@ -7,6 +7,7 @@ env = Environment(ENV = os.environ)
 # Configure all the tools.
 env['CC'] = 'x86_64-w64-mingw32-gcc'
 env['LINK'] = 'ld'
+env['OBJCOPY'] = 'objcopy'
 
 # Compiler include paths.
 env.Append(CPPPATH = [
@@ -46,7 +47,31 @@ env.Append(LIBS = [
 env['LINKCOM'] = '$LINK $SOURCES $LINKFLAGS $_LIBDIRFLAGS $_LIBFLAGS -o $TARGET'
 
 # Create an object file for all the source files.
-env.Program('output/boot.so', Glob('bootloader/src/*.c'))
+generatedProgram = env.Program('output/boot.so', Glob('bootloader/src/*.c'))
 
+# UEFI file generator.
+
+def uefi_generator(source, target, env, for_signature):
+    
+    sectionsFlags = ''
+
+    # Define which sections to copy.
+    sectionsToCopy = ['.text', '.sdata', '.data', '.dynamic', '.dynsym', '.rel', '.rela', '.reloc']
+
+    for section in sectionsToCopy:
+        sectionsFlags += '-j %s '%(section)
+
+    return '$OBJCOPY %s --target=efi-app-x86_64 %s %s'%(sectionsFlags, source[0], target[0])
+
+env.Append(BUILDERS = {
+    'UefiBuild': Builder(
+        generator=uefi_generator,
+        suffix='.efi',
+        src_suffix='.so'
+    )
+})
+
+# Use the UEFI file generator.
+env.UefiBuild(generatedProgram)
 
 # Create a new environment for building the kernel.
