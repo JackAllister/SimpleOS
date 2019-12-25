@@ -5,7 +5,7 @@ import os
 env = Environment(ENV = os.environ)
 
 # Configure all the tools.
-env['CC'] = 'x86_64-w64-mingw32-gcc'
+env['CC'] = 'gcc'
 env['LINK'] = 'ld'
 env['OBJCOPY'] = 'objcopy'
 
@@ -21,6 +21,11 @@ env.Append(CFLAGS = [
     '-fpic',
     '-fshort-wchar',
     '-mno-red-zone'
+])
+
+# Compiler defines.
+env.Append(CPPDEFINES = [
+    'EFI_FUNCTION_WRAPPER'
 ])
 
 # Configure the linker.

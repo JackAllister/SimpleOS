@@ -38,6 +38,7 @@
 *.hex
 *.efi
 *.img
+*.iso
 
 # Debug files
 *.dSYM/
