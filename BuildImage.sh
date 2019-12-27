@@ -27,10 +27,4 @@ sudo umount /mnt/build-loop
 sudo rm -r /mnt/build-loop
 sudo losetup -d /dev/loop100
 
-# Also create an ISO which can be used for QEMU: qemu-system-x86_64 -L . -bios utils/OVMF-pure-efi.fd -cdrom output/built.iso
-mkdir iso
-cp built.img iso
-xorriso -as mkisofs -R -f -e built.img -no-emul-boot -o built.iso iso
-rm -r iso/
-
 cd ..
