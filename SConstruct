@@ -12,7 +12,8 @@ env['OBJCOPY'] = 'objcopy'
 # Compiler include paths.
 env.Append(CPPPATH = [
     '/usr/include/efi/', 
-    '/usr/include/efi/x86_64/'
+    '/usr/include/efi/x86_64/',
+    'bootloader/header'
 ])
 
 # Compiler flags.
