@@ -22,19 +22,13 @@ EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable, graphics_info_t* graphic
 {
     static const EFI_GUID PROTOCOL_GUID = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
 
-    EFI_STATUS status = uefi_call_wrapper(systemTable->ConOut->OutputString,
-                                        2,
-                                        systemTable->ConOut,
-                                        L"Initialising graphics module.\r\n");
+    Print(L"\tInitialising graphics module.\r\n");
+
+    EFI_STATUS status = uefi_call_wrapper(systemTable->BootServices->LocateProtocol, 3, &PROTOCOL_GUID, NULL, &graphicsInfo->protocol);
 
     if (FALSE == EFI_ERROR(status))
     {
-        status = uefi_call_wrapper(systemTable->BootServices->LocateProtocol, 3, &PROTOCOL_GUID, NULL, &graphicsInfo->protocol);
-
-        if (FALSE == EFI_ERROR(status))
-        {
-            status = findMostAppropriateMode(graphicsInfo);
-        }
+        status = findMostAppropriateMode(graphicsInfo);
     }
 
     return status;

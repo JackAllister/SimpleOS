@@ -21,7 +21,8 @@ env.Append(CFLAGS = [
     '-fno-stack-protector',
     '-fpic',
     '-fshort-wchar',
-    '-mno-red-zone'
+    '-mno-red-zone',
+    '-ggdb'
 ])
 
 # Compiler defines.
@@ -69,6 +70,19 @@ def uefi_generator(source, target, env, for_signature):
 
     return '$OBJCOPY %s --target=efi-app-x86_64 %s %s'%(sectionsFlags, source[0], target[0])
 
+def debug_uefi_generator(source, target, env, for_signature):
+
+    sectionsFlags = ''
+
+    # Define which sections to copy.
+    sectionsToCopy = ['.text', '.sdata', '.data', '.dynamic', '.dynsym', '.rel', '.rela', '.reloc',
+                      '.debug_info', '.debug_abbrev', '.debug_loc', '.debug_aranges', '.debug_line', '.debug_macinfo', '.debug_str']
+
+    for section in sectionsToCopy:
+        sectionsFlags += '-j %s '%(section)
+
+    return '$OBJCOPY %s --target=efi-app-x86_64 %s %s'%(sectionsFlags, source[0], target[0])
+
 env.Append(BUILDERS = {
     'UefiBuild': Builder(
         generator=uefi_generator,
@@ -77,7 +91,18 @@ env.Append(BUILDERS = {
     )
 })
 
+env.Append(BUILDERS = {
+    'DebugUefiBuild': Builder(
+        generator=debug_uefi_generator,
+        suffix='.efi.debug',
+        src_suffix='.so'
+    )
+})
+
+
 # Use the UEFI file generator.
 env.UefiBuild(generatedProgram)
+
+env.DebugUefiBuild(generatedProgram)
 
 # Create a new environment for building the kernel.

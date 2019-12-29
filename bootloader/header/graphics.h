@@ -2,6 +2,7 @@
 #define GRAPHICS_H
 
 #include <efi.h>
+#include <efilib.h>
 
 /******************** Public Defines ********************/
 

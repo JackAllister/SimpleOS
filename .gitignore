@@ -37,6 +37,7 @@
 *.x86_64
 *.hex
 *.efi
+*.efi.debug
 *.img
 *.iso
 
