@@ -10,7 +10,7 @@
 
 typedef struct
 {
-    EFI_GRAPHICS_OUTPUT_PROTOCOL protocol;
+    EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol;
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION modeInfo;
     void* bufferBase;
     UINT32 bufferSize;

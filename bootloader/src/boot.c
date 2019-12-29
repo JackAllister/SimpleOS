@@ -24,12 +24,12 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
     {
         Print(L"Bootloader Image Base: 0x%lX\r\n", loadedImage->ImageBase);
 
-        int waitForDebug = TRUE;
+        // int waitForDebug = TRUE;
 
-        while (TRUE == waitForDebug)
-        {
-            __asm__ __volatile__("pause");
-        }
+        // while (TRUE == waitForDebug)
+        // {
+        //     __asm__ __volatile__("pause");
+        // }
 
         graphics_info_t graphicsInfo;
 
