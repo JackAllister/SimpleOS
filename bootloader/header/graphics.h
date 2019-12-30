@@ -1,6 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <stdint.h>
 #include <efi.h>
 #include <efilib.h>
 
@@ -12,8 +13,9 @@ typedef struct
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol;
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION modeInfo;
+    uint32_t mode;
     void* bufferBase;
-    UINT32 bufferSize;
+    uint32_t bufferSize;
 } graphics_info_t;
 
 /******************** Public Constants ********************/

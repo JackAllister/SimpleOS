@@ -29,6 +29,22 @@ EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable, graphics_info_t* graphic
     if (FALSE == EFI_ERROR(status))
     {
         status = findMostAppropriateMode(graphicsInfo);
+
+        if (FALSE == EFI_ERROR(status))
+        {
+            /* Appropriate mode has been selected, so set the mode. */
+            status = uefi_call_wrapper(graphicsInfo->protocol->SetMode, 2, graphicsInfo->protocol, graphicsInfo->mode);
+
+            if (FALSE == EFI_ERROR(status))
+            {
+                /* Successfully set the graphics mode, store buffer info. */
+                graphicsInfo->bufferBase = (void*)graphicsInfo->protocol->Mode->FrameBufferBase;
+                graphicsInfo->bufferSize = graphicsInfo->protocol->Mode->FrameBufferSize;
+
+                Print(L"Frame buffer base: 0x%lX.\r\n", graphicsInfo->bufferBase);
+                Print(L"Frame buffer size: %d.\r\n", graphicsInfo->bufferSize);
+            }
+        }
     }
 
     return status;
@@ -42,7 +58,6 @@ EFI_STATUS findMostAppropriateMode(graphics_info_t* graphicsInfo)
 {
     EFI_STATUS status;
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* pCurrentModeInfo;
-    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION bestModeInfo;
     UINTN size;
 
     uint32_t maxFoundVerticalResolution = 0;
@@ -60,8 +75,10 @@ EFI_STATUS findMostAppropriateMode(graphics_info_t* graphicsInfo)
     
     if (FALSE == EFI_ERROR(status))
     {
-        /* Set the best to the first one we have successfully found. */
-        bestModeInfo = *pCurrentModeInfo;
+        /* Set the best to the first one we have successfully found. 
+         * This is the default if no other suitable ones are found. */
+        graphicsInfo->modeInfo = *pCurrentModeInfo;
+        graphicsInfo->mode = graphicsInfo->protocol->Mode->Mode;
 
         Print(L"\t\tGraphics modes available: %d\r\n", graphicsInfo->protocol->Mode->MaxMode);
 
@@ -71,8 +88,8 @@ EFI_STATUS findMostAppropriateMode(graphics_info_t* graphicsInfo)
             status = uefi_call_wrapper(graphicsInfo->protocol->QueryMode, 4, graphicsInfo->protocol, i, &size, &pCurrentModeInfo);
             if (FALSE == EFI_ERROR(status))
             {
-                Print(L"\t\tGraphics mode %d Horizontal: %d Vertical: %d\r\n", 
-                      i, pCurrentModeInfo->HorizontalResolution, pCurrentModeInfo->VerticalResolution);
+                // Print(L"\t\tGraphics mode %d Horizontal: %d Vertical: %d\r\n", 
+                //       i, pCurrentModeInfo->HorizontalResolution, pCurrentModeInfo->VerticalResolution);
 
                 /* Check to see if the pixel formats are appropriate. */
                 if ((PixelRedGreenBlueReserved8BitPerColor == pCurrentModeInfo->PixelFormat) ||
@@ -89,7 +106,8 @@ EFI_STATUS findMostAppropriateMode(graphics_info_t* graphicsInfo)
                             (pCurrentModeInfo->VerticalResolution >= maxFoundVerticalResolution))
                         {
                             /* Find a better resolution mode, so store it and all other information required. */
-                            bestModeInfo = *pCurrentModeInfo;
+                            graphicsInfo->modeInfo = *pCurrentModeInfo;
+                            graphicsInfo->mode = i;
 
                             maxFoundHorizontalResolution = pCurrentModeInfo->HorizontalResolution;
                             maxFoundVerticalResolution = pCurrentModeInfo->VerticalResolution;
@@ -100,10 +118,10 @@ EFI_STATUS findMostAppropriateMode(graphics_info_t* graphicsInfo)
         }
     }
 
-    Print(L"\t\tGraphics resolution selected: %d x %d.\r\n", bestModeInfo.HorizontalResolution, bestModeInfo.VerticalResolution);
-
-    /* Set the graphics output mode, to the best found one. */
-    graphicsInfo->modeInfo = bestModeInfo;
+    Print(L"\t\tGraphics mode %d selected: %d x %d.\r\n", 
+          graphicsInfo->mode,
+          graphicsInfo->modeInfo.HorizontalResolution, 
+          graphicsInfo->modeInfo.VerticalResolution);
 
     return status;
 }
