@@ -9,11 +9,14 @@
 
 /******************** Public Typedefs ********************/
 
+/* Forward declaration used to hide internal datatype from external modules. */
+typedef struct _graphics_internal_t* graphics_handle_t;
+
 typedef struct
 {
-    EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol;
-    EFI_GRAPHICS_OUTPUT_MODE_INFORMATION modeInfo;
-    uint32_t mode;
+    graphics_handle_t handle;
+    uint32_t horizontal;
+    uint32_t vertical;
     void* bufferBase;
     uint32_t bufferSize;
 } graphics_info_t;
