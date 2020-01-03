@@ -8,8 +8,8 @@
  * No external modules should be able to the internal types. */
 typedef struct _graphics_internal_t
 {
-    EFI_GRAPHICS_PIXEL_FORMAT pixelFormat;
-} graphics_internal_t;
+    EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol;
+} graphics_internal_t, *graphics_handle_t;
 
 /******************** Module Constants ********************/
 
@@ -21,12 +21,16 @@ typedef struct _graphics_internal_t
 
 /******************** Module Prototypes ********************/
 
-EFI_STATUS findMostAppropriateMode(EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol, uint32_t* foundMode);
+static bool setPixel(os_handle_t handle, uint32_t x, uint32_t y, draw_color_t color);
+static bool clearScreen(os_handle_t handle);
+static EFI_STATUS findMostAppropriateMode(EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol, uint32_t* foundMode);
 
 /******************** Public Code ********************/
 
 /* Initialises the graphics module, and returns the graphics information. */
-EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable, graphics_info_t* graphicsInfo)
+EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable,
+                         os_handle_t* pointerHandle,
+                         graphics_info_t* pointerInfo)
 {
     static const EFI_GUID PROTOCOL_GUID = EFI_GRAPHICS_OUTPUT_PROTOCOL_GUID;
 
@@ -49,31 +53,32 @@ EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable, graphics_info_t* graphic
 
             if (FALSE == EFI_ERROR(status))
             {
-                 /* Allocate memory for the internal instance data. */
-                graphics_internal_t* allocatedInternal;
+                Print(L"Video mode selected: %d\r\n", foundMode);
 
+                 /* Allocate memory for the internal instance data/handle.
+                  * TODO: Remove the fixed 1 page allocation, mathematically calculate number of pages. */
                 status = uefi_call_wrapper(systemTable->BootServices->AllocatePages,
                                            4,
                                            AllocateAnyPages,
                                            EfiLoaderData,
                                            1,
-                                           &allocatedInternal);
+                                           pointerHandle);
 
                 if (FALSE == EFI_ERROR(status))
                 {
-                    allocatedInternal->pixelFormat = protocol->Mode->Info->PixelFormat;
+                    /* De-reference the abstract pointer to its actual type. */
+                    graphics_handle_t graphicsHandle = (graphics_handle_t)*pointerHandle;
 
-                    graphicsInfo->handle = allocatedInternal;
+                    /* Store internal state data. */
+                    graphicsHandle->protocol = protocol;
 
-                    /* Successfully set the graphics mode, store buffer info. */
-                    graphicsInfo->horizontal = protocol->Mode->Info->HorizontalResolution;
-                    graphicsInfo->vertical = protocol->Mode->Info->VerticalResolution;
-                    graphicsInfo->bufferBase = (void*)protocol->Mode->FrameBufferBase;
-                    graphicsInfo->bufferSize = protocol->Mode->FrameBufferSize;
+                    /* Set the resulting information. */
+                    pointerInfo->horizontal = protocol->Mode->Info->HorizontalResolution;
+                    pointerInfo->vertical = protocol->Mode->Info->VerticalResolution;
+                    pointerInfo->functions.setPixelFunc = setPixel;
+                    pointerInfo->functions.clearScreenFunc = clearScreen;
 
-                    Print(L"Resolution: %dx%d.\r\n", graphicsInfo->horizontal, graphicsInfo->vertical);
-                    Print(L"Frame buffer base: 0x%lX.\r\n", graphicsInfo->bufferBase);
-                    Print(L"Frame buffer size: %d.\r\n", graphicsInfo->bufferSize);
+                    Print(L"Resolution: %dx%d.\r\n", pointerInfo->horizontal, pointerInfo->vertical);
                 }
             }
         }
@@ -84,9 +89,47 @@ EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable, graphics_info_t* graphic
 
 /******************** Module Code ********************/
 
+/* Used for setting a pixel to a specific color. */
+static bool setPixel(os_handle_t handle, uint32_t x, uint32_t y, draw_color_t color)
+{
+    bool result;
+
+    /* TODO: Implement proper return type for status rather than just true/false. */
+    if (NULL != handle)
+    {
+        graphics_handle_t graphicsHandle = (graphics_handle_t)handle;
+
+        /* Ensure the specified pixel is within the display resolution. */
+        if ((x < graphicsHandle->protocol->Mode->Info->HorizontalResolution) &&
+            (y < graphicsHandle->protocol->Mode->Info->VerticalResolution))
+        {
+            /* TODO: To implement. */
+            Print(L"Setting pixel %dx%d to 0x%X.\r\n", x, y, color);
+            result = false;
+        }
+        else
+        {
+            result = false;
+        }
+    }
+    else
+    {
+        result = false;
+    }
+
+    return result;
+}
+
+/* Used for clearing the screen completely. */
+static bool clearScreen(os_handle_t handle)
+{
+    Print(L"Clearing screen.\r\n");
+    return false;
+}
+
 /* Searches through all the graphics modes available and find the most appropriate for
  * the requirements of the bootloader. */
-EFI_STATUS findMostAppropriateMode(EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol, uint32_t* foundMode)
+static EFI_STATUS findMostAppropriateMode(EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol, uint32_t* foundMode)
 {
     EFI_STATUS status;
     EFI_GRAPHICS_OUTPUT_MODE_INFORMATION* pCurrentModeInfo;

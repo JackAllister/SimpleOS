@@ -31,13 +31,28 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
         //     __asm__ __volatile__("pause");
         // }
 
+        os_handle_t graphicsHandle;
         graphics_info_t graphicsInfo;
 
         /* Initialise all required modules. */
-        status = graphics_init(SystemTable, &graphicsInfo);
+        status = graphics_init(SystemTable, &graphicsHandle, &graphicsInfo);
+
+        if (FALSE == EFI_ERROR(status))
+        {
+            /* For now bypassing the drawing interface, this SHOULD NOT be done normally. */
+            draw_color_t color = 0;
+
+            for (uint32_t x = 0; x < graphicsInfo.horizontal; x++)
+            {
+                for (uint32_t y = 0; y < graphicsInfo.vertical; y++)
+                {
+                    graphicsInfo.functions.setPixelFunc(graphicsHandle, x, y, color);
+
+                    color++;
+                }
+            }
+        }
     }
-
-
 
 
     for(;;) __asm__("hlt");
