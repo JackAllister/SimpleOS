@@ -27,4 +27,7 @@ sudo umount /mnt/build-loop
 sudo rm -r /mnt/build-loop
 sudo losetup -d /dev/loop100
 
+# Create a VMDK of the image as well for VMWare.
+qemu-img convert built.img -O vmdk built.vmdk
+
 cd ..
