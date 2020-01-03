@@ -1,5 +1,10 @@
 #include <stdint.h>
+#include <string.h>
 #include "graphics.h"
+
+/******************** Module Defines ********************/
+
+#define SIZE_OF_PIXEL 4
 
 /******************** Module Typedefs ********************/
 
@@ -10,6 +15,10 @@ typedef struct _graphics_internal_t
 {
     EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol;
 } graphics_internal_t, *graphics_handle_t;
+
+/* Defines a type for a raw color byte buffer.
+ * An array is used rather than a uint32 to explicitly declare endianness. */
+typedef uint8_t raw_color_t[SIZE_OF_PIXEL];
 
 /******************** Module Constants ********************/
 
@@ -23,6 +32,7 @@ typedef struct _graphics_internal_t
 
 static bool setPixel(os_handle_t handle, uint32_t x, uint32_t y, draw_color_t color);
 static bool clearScreen(os_handle_t handle);
+bool convertDrawColor(EFI_GRAPHICS_PIXEL_FORMAT format, draw_color_t drawColor, raw_color_t rawColor);
 static EFI_STATUS findMostAppropriateMode(EFI_GRAPHICS_OUTPUT_PROTOCOL* protocol, uint32_t* foundMode);
 
 /******************** Public Code ********************/
@@ -92,29 +102,50 @@ EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable,
 /* Used for setting a pixel to a specific color. */
 static bool setPixel(os_handle_t handle, uint32_t x, uint32_t y, draw_color_t color)
 {
-    bool result;
+    bool result = false;
 
     /* TODO: Implement proper return type for status rather than just true/false. */
     if (NULL != handle)
     {
         graphics_handle_t graphicsHandle = (graphics_handle_t)handle;
 
+        /* Get the EFI graphics mode and info. */
+        EFI_GRAPHICS_OUTPUT_PROTOCOL_MODE* graphicsMode = graphicsHandle->protocol->Mode;
+
         /* Ensure the specified pixel is within the display resolution. */
-        if ((x < graphicsHandle->protocol->Mode->Info->HorizontalResolution) &&
-            (y < graphicsHandle->protocol->Mode->Info->VerticalResolution))
+        if ((x < graphicsMode->Info->HorizontalResolution) &&
+            (y < graphicsMode->Info->VerticalResolution))
         {
-            /* TODO: To implement. */
-            Print(L"Setting pixel %dx%d to 0x%X.\r\n", x, y, color);
-            result = false;
+            /* Calculate the address of where the pixel is. */
+            uint8_t* addrOfPixel = (uint8_t*)(graphicsMode->FrameBufferBase +
+                                                (x * SIZE_OF_PIXEL) +
+                                                (y * SIZE_OF_PIXEL) *
+                                                graphicsMode->Info->PixelsPerScanLine);
+
+            /* Convert the draw color to the correct format for EFI. 
+             * raw_color_t is of array type, so therefor we don't need to ampersand (&) in the call. */
+            raw_color_t rawColor;
+
+            if (true == convertDrawColor(graphicsMode->Info->PixelFormat, color, rawColor))
+            {
+                /* DEBUG. */
+                // Print(L"Frame buffer base: 0x%Xl\r\n", graphicsMode->FrameBufferBase);
+                // Print(L"X: %d\r\n", x);
+                // Print(L"Y: %d\r\n", y);
+                // Print(L"PixelsPerScanLine: %d\r\n", graphicsMode->Info->PixelsPerScanLine);
+
+                // Print(L"\r\n");
+                // Print(L"Address of pixel: 0x%Xl\r\n", addrOfPixel);
+
+                // Print(L"\r\n");
+                // Print(L"Draw Color: 0x%X Red: %d Green: %d: Blue: %d\r\n", color.flags, color.red, color.green, color.blue);
+                // Print(L"Raw Color: 0x%X\r\n", rawColor);
+
+                /* Explicitly copy raw pixel buffer to the address of the pixel. */
+                memcpy(addrOfPixel, rawColor, sizeof(rawColor));
+                result = true;
+            }
         }
-        else
-        {
-            result = false;
-        }
-    }
-    else
-    {
-        result = false;
     }
 
     return result;
@@ -125,6 +156,39 @@ static bool clearScreen(os_handle_t handle)
 {
     Print(L"Clearing screen.\r\n");
     return false;
+}
+
+/* Converts the a draw color to the appropriate EFI color bytes. */
+bool convertDrawColor(EFI_GRAPHICS_PIXEL_FORMAT format, draw_color_t drawColor, raw_color_t rawColor)
+{
+    bool result;
+
+    /* Depending on pixel format the order of the bytes for color changes. */
+    if (PixelRedGreenBlueReserved8BitPerColor == format)
+    {
+        /* Explicitly define the endianness. */
+        rawColor[0] = drawColor.red;
+        rawColor[1] = drawColor.green;
+        rawColor[2] = drawColor.blue;
+        rawColor[3] = 0; /* Reserved. */
+        result = true;
+
+    }
+    else if (PixelBlueGreenRedReserved8BitPerColor == format)
+    {
+        /* Explicitly define the endianness. */
+        rawColor[0] = drawColor.blue;
+        rawColor[1] = drawColor.green;
+        rawColor[2] = drawColor.red;
+        rawColor[3] = 0; /* Reserved. */
+        result = true;
+    }
+    else
+    {
+        result = false;
+    }
+
+    return result;
 }
 
 /* Searches through all the graphics modes available and find the most appropriate for

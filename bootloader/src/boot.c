@@ -39,16 +39,21 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
 
         if (FALSE == EFI_ERROR(status))
         {
+            /* Print some cool art for debugging. */
+
             /* For now bypassing the drawing interface, this SHOULD NOT be done normally. */
-            draw_color_t color = 0;
+            draw_color_t color = {0};
+                   
 
             for (uint32_t x = 0; x < graphicsInfo.horizontal; x++)
             {
                 for (uint32_t y = 0; y < graphicsInfo.vertical; y++)
                 {
-                    graphicsInfo.functions.setPixelFunc(graphicsHandle, x, y, color);
+                    color.red = x % 0xFF;
+                    color.green = y % 0xFF;
+                    color.blue = (x + y) % 255;
 
-                    color++;
+                    graphicsInfo.functions.setPixelFunc(graphicsHandle, x, y, color);
                 }
             }
         }

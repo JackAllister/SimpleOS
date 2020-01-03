@@ -17,8 +17,15 @@
 /******************** Public Typedefs ********************/
 
 /* Definition of what a color is. */
-typedef uint32_t draw_color_t;
-
+typedef union
+{
+    struct {
+        uint8_t red;
+        uint8_t green;
+        uint8_t blue;
+    };
+    uint32_t flags; /* Alternative to using struct. */
+} draw_color_t;
 
 /*** Functions that are required to be provided to the underlying driver. ***/
 
