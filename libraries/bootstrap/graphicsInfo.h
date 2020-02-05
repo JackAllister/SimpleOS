@@ -1,21 +1,28 @@
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#ifndef GRAPHICS_INFO_H
+#define GRAPHICS_INFO_H
 
 #include <stdint.h>
 #include <stdbool.h>
-#include <efi.h>
-#include <efilib.h>
-#include "drawInterface.h"
 
 /******************** Public Defines ********************/
 
 /******************** Public Typedefs ********************/
 
+typedef enum
+{
+    GRAPHICS_COLOR_UNKNOWN,
+    GRAPHICS_COLOR_RGB,
+    GRAPHICS_COLOR_BGR
+} graphics_color_t;
+
 typedef struct
 {
+    void* buffer;
+    uint32_t bufferSize;
     uint32_t horizontal;
     uint32_t vertical;
-    display_draw_functions_t functions;
+    uint32_t pixelsPerScanLine;
+    graphics_color_t colorMode;
 } graphics_info_t;
 
 /******************** Public Constants ********************/
@@ -24,8 +31,4 @@ typedef struct
 
 /******************** Public Prototypes ********************/
 
-EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable, 
-                         os_handle_t* pointerHandle,
-                         graphics_info_t* pointerInfo);
-
-#endif /* GRAPHICS_H */
+#endif /* GRAPHICS_INFO_H */

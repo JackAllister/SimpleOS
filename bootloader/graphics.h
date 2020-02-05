@@ -1,15 +1,15 @@
-#ifndef OS_TYPES_H
-#define OS_TYPES_H
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
 
-/* Standard types that the system relies on. */
+#include <stdint.h>
+#include <stdbool.h>
+#include <efi.h>
+#include <efilib.h>
+#include "graphicsInfo.h"
 
 /******************** Public Defines ********************/
 
 /******************** Public Typedefs ********************/
-
-/* Definition of a handle, this is effectively an opaque pointer
- * that will be used for identifying handles to drivers. */
-typedef void* os_handle_t;
 
 /******************** Public Constants ********************/
 
@@ -17,5 +17,7 @@ typedef void* os_handle_t;
 
 /******************** Public Prototypes ********************/
 
+EFI_STATUS graphics_init(EFI_SYSTEM_TABLE* systemTable, 
+                         graphics_info_t* pointerInfo);
 
-#endif /* OS_TYPES_H */
+#endif /* GRAPHICS_H */

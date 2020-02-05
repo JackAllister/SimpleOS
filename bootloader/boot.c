@@ -1,6 +1,7 @@
 #include <efi.h>
 #include <efilib.h>
 #include "graphics.h"
+#include "draw.h"
  
 EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable)
 {
@@ -31,29 +32,37 @@ EFI_STATUS EFIAPI efi_main(EFI_HANDLE ImageHandle, EFI_SYSTEM_TABLE *SystemTable
         //     __asm__ __volatile__("pause");
         // }
 
-        os_handle_t graphicsHandle;
         graphics_info_t graphicsInfo;
 
         /* Initialise all required modules. */
-        status = graphics_init(SystemTable, &graphicsHandle, &graphicsInfo);
+        status = graphics_init(SystemTable, &graphicsInfo);
 
         if (FALSE == EFI_ERROR(status))
         {
-            /* Print some cool art for debugging. */
+            /* TODO: Do the memory map here. */
 
-            /* For now bypassing the drawing interface, this SHOULD NOT be done normally. */
-            draw_color_t color = {0};
-                   
+            /* Initial the draw module, for some cool drawing. */
+            os_handle_t drawHandle;
 
-            for (uint32_t x = 0; x < graphicsInfo.horizontal; x++)
+            os_status_t drawStatus = draw_init(SystemTable, &graphicsInfo, &drawHandle);
+
+            if (ESUCCESS == drawStatus)
             {
-                for (uint32_t y = 0; y < graphicsInfo.vertical; y++)
+                /* Print some cool art for debugging. */
+                draw_color_t color = {0};
+                    
+                for (uint32_t x = 0; x < graphicsInfo.horizontal; x++)
                 {
-                    color.red = x % 0xFF;
-                    color.green = y % 0xFF;
-                    color.blue = (x + y) % 255;
+                    for (uint32_t y = 0; y < graphicsInfo.vertical; y++)
+                    {
+                        color.red = 0xFF;
+                        //color.red = x % 0xFF;
+                        //color.green = y % 0xFF;
+                        //color.blue = (x + y) % 255;
 
-                    graphicsInfo.functions.setPixelFunc(graphicsHandle, x, y, color);
+                        /* TODO: Actually care about draw status. */
+                        (void)draw_setPixel(drawHandle, x, y, color);
+                    }
                 }
             }
         }

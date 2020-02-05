@@ -13,7 +13,10 @@ env['OBJCOPY'] = 'objcopy'
 env.Append(CPPPATH = [
     '/usr/include/efi/', 
     '/usr/include/efi/x86_64/',
-    'bootloader/header'
+    'bootloader',
+    'libraries/bootstrap',
+    'libraries/draw',
+    'libraries/osTypes'
 ])
 
 # Compiler flags.
@@ -53,8 +56,17 @@ env.Append(LIBS = [
 # Set the format for the linking.
 env['LINKCOM'] = '$LINK $SOURCES $LINKFLAGS $_LIBDIRFLAGS $_LIBFLAGS -o $TARGET'
 
+# Gather a list of all the source files.
+sourceList = []
+
+# Append the bootloader files
+sourceList.append(Glob('bootloader/*.c'))
+
+# Append the library files
+sourceList.append(Glob('libraries/*/*.c'))
+
 # Create an object file for all the source files.
-generatedProgram = env.Program('output/boot.so', Glob('bootloader/src/*.c'))
+generatedProgram = env.Program('output/boot.so', sourceList)
 
 # UEFI file generator.
 
