@@ -57,9 +57,5 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# VS Code
-.vscode
-*.code-workspace
-
 # Scons
 *.dblite
